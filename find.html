@@ -1,0 +1,193 @@
+<html>
+<head>
+	<title>What's Nearby?</title>
+	<style type="text/css">
+
+		body{
+			padding: 0px;
+			margin: 0px;
+			font-family: sans-serif;
+		}
+
+		#map{
+			height: 500px;
+			width: 800px;
+			margin: 100 auto 0;
+		}
+
+		.place_name{
+			font-size: 20px;
+		}
+
+		a{
+			text-decoration: none;
+		}
+
+		.back{
+			height: 50px;
+			width: 800px;
+			margin: 10 auto 0;
+			text-align: center;
+			color: #fff;
+			background-color: #2C3D51;
+			line-height: 50px;
+		}
+	</style>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC7BSB-Jt2WrQiTbPoj6KUNc4LU4KmUCBU&libraries=places&callback=initMap" async defer></script>
+	<script type="text/javascript">
+
+		// Getting Query String values 
+
+		function getParameterByName(name, url) {
+		    if (!url) {
+		      url = window.location.href;
+		    }
+		    name = name.replace(/[\[\]]/g, "\\$&");
+		    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+		        results = regex.exec(url);
+		    if (!results) return null;
+		    if (!results[2]) return '';
+		    return decodeURIComponent(results[2].replace(/\+/g, " "));
+		}
+
+		var store_type = getParameterByName('type');
+
+		// Initial Render of Map
+
+		var map;
+
+		var infowindow;
+
+		function initMap(){
+
+			map = new google.maps.Map(document.getElementById('map'),{
+				center: {lat: 26.845179,lng: 75.802219}, 
+				zoom: 14
+			});
+
+			infowindow = new google.maps.InfoWindow();
+
+		}
+
+		// Getting User's Location Using HTML 5 Geolocation API
+
+		if (navigator.geolocation) {
+
+          	navigator.geolocation.getCurrentPosition(function(position) {
+
+	            var pos = {
+	              lat: position.coords.latitude,
+	              lng: position.coords.longitude
+	            };
+
+	            // Changing center of the Map according to user's posotion
+
+	            map.setCenter(pos);
+
+	            // Putting marker on the user's position
+
+	            var marker = new google.maps.Marker({
+		            map: map,
+		            title: 'Your Location!',
+		            animation: google.maps.Animation.BOUNCE,
+		            position: pos,
+		            draggable: true
+		        });
+
+	            // Centering map on drag event
+
+		        marker.addListener('drag', function() {
+				    
+				    window.setTimeout(function() {
+				      map.panTo(marker.getPosition());
+				    }, 2000);
+
+				});
+
+
+	            // Calling the nearbySearch method of places library
+
+	            var service = new google.maps.places.PlacesService(map);
+
+			    service.nearbySearch({
+			        location: pos,
+			        radius: 2000,
+			        type: [store_type]
+			    }, processResults);
+
+        	}, function(){
+
+        		alert("Couldn't find your current location.");
+				window.location.href = "index.html";
+
+        	});
+
+        }
+        else{
+
+        	alert("Couldn't find your current location.");
+			window.location.href = "index.html";
+
+        }
+
+
+        // Success callback of nearby search method
+
+		function processResults(results, status){
+
+			if (status !== google.maps.places.PlacesServiceStatus.OK) {
+          		alert("Cannot find "+store_type+"'s near you.");
+          		return;
+        	}
+        	else{
+
+        		createMarkers(results);
+
+        	}
+
+		}
+
+
+		// Creating Markers
+
+		function createMarkers(places) {
+
+			for(var i = 0; i < places.length; i++){
+
+				var place = places[i];
+
+				var image = {
+		            url: place.icon,
+		            size: new google.maps.Size(71, 71),
+		            origin: new google.maps.Point(0, 0),
+		            anchor: new google.maps.Point(17, 34),
+		            scaledSize: new google.maps.Size(25, 25)
+		        };
+
+		        var marker = new google.maps.Marker({
+		            map: map,
+		            icon: image,
+		            title: place.name,
+		            position: place.geometry.location
+		        });
+
+		        // Adding infowindow to each marker
+
+		        google.maps.event.addListener(marker, 'click', (function(marker,i) {
+		        	return function(){
+			          	infowindow.setContent("<b class='place_name'>"+places[i].name+"</b><br>"+places[i].vicinity);
+			          	infowindow.open(map, marker);
+			        }
+		        })(marker,i));
+
+			}
+
+		}
+		
+	</script>
+</head>
+<body>
+	<div id="map"></div>
+	<a href="index.html"><div class="back">Explore More!</div></a>
+</body>
+</html>
